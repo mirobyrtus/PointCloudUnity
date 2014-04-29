@@ -1,0 +1,270 @@
+#define EXPORT_API __declspec(dllexport) // Visual Studio needs annotating exported functions with this
+
+#include <iostream>
+#include <pcl/ModelCoefficients.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/kdtree/kdtree.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/segmentation/extract_clusters.h>
+
+// Link following functions C-style (required for plugins)
+extern "C"
+{
+	pcl::PointCloud<pcl::PointXYZ>::Ptr maincloud (new pcl::PointCloud<pcl::PointXYZ>);
+	
+	pcl::PointCloud<pcl::PointXYZ>::Ptr *clusteredclouds;
+	int clustersCount = 0;
+
+	struct mycloud 
+    { 
+        int size;
+		float *resultVertsX, *resultVertsY, *resultVertsZ;
+    };
+
+	EXPORT_API bool structureTest(mycloud* myc) {
+		mycloud mc; 
+		mc.size = 2; 
+		mc.resultVertsX = new float[mc.size];
+		mc.resultVertsX[0] = 1.1f;
+		mc.resultVertsX[1] = 2.2f;
+		mc.resultVertsY = new float[mc.size];
+		mc.resultVertsY[0] = 3.3f;
+		mc.resultVertsY[1] = 4.4f;
+		mc.resultVertsZ = new float[mc.size];
+		mc.resultVertsZ[0] = 5.1f;
+		mc.resultVertsZ[1] = 5.2f;
+
+		*myc = mc;
+		return true;
+	}
+
+	/*
+	int main() {
+		mycloud m; 
+		structureTest(&m);
+
+		std::cout << m.size << std::endl;
+		getchar();
+		return 0;
+	}
+	*/
+
+	EXPORT_API bool readCloud() {
+		pcl::PCDReader reader;
+		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
+		reader.read ("table_scene_lms400.pcd", *cloud);
+
+		if (cloud->empty()) {
+			return false;
+		}
+	
+		// Create the filtering object: downsample the dataset using a leaf size of 1cm
+		pcl::VoxelGrid<pcl::PointXYZ> vg;
+		vg.setInputCloud (cloud);
+		vg.setLeafSize (0.01f, 0.01f, 0.01f);
+		vg.filter (*maincloud);
+		
+		return true;
+	}
+
+	EXPORT_API bool removeBiggestPlane() {
+		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_f (new pcl::PointCloud<pcl::PointXYZ>);
+
+		// Create the segmentation object for the planar model and set all the parameters
+		pcl::SACSegmentation<pcl::PointXYZ> seg;
+		pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+		pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
+		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_plane (new pcl::PointCloud<pcl::PointXYZ> ());
+		pcl::PCDWriter writer;
+		seg.setOptimizeCoefficients (true);
+		seg.setModelType (pcl::SACMODEL_PLANE);
+		seg.setMethodType (pcl::SAC_RANSAC);
+		seg.setMaxIterations (100);
+		seg.setDistanceThreshold (0.02);
+
+		int i=0, nr_points = (int) maincloud->points.size ();
+		while (maincloud->points.size () > 0.3 * nr_points)
+		{
+			// Segment the largest planar component from the remaining cloud
+			seg.setInputCloud (maincloud);
+			seg.segment (*inliers, *coefficients);
+			if (inliers->indices.size () == 0)
+			{
+				// std::cout << "Could not estimate a planar model for the given dataset." << std::endl;
+				break;
+			}
+
+			// Extract the planar inliers from the input cloud
+			pcl::ExtractIndices<pcl::PointXYZ> extract;
+			extract.setInputCloud (maincloud);
+			extract.setIndices (inliers);
+			extract.setNegative (false);
+
+			// Get the points associated with the planar surface
+			extract.filter (*cloud_plane);
+			// std::cout << "PointCloud representing the planar component: " << cloud_plane->points.size () << " data points." << std::endl;
+
+			// Remove the planar inliers, extract the rest
+			extract.setNegative (true);
+			extract.filter (*cloud_f);
+			*maincloud = *cloud_f;
+		}
+
+		return true;
+	}
+
+	EXPORT_API bool getClusters() {
+		// Creating the KdTree object for the search method of the extraction
+		pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
+		tree->setInputCloud (maincloud);
+
+		std::vector<pcl::PointIndices> cluster_indices;
+		pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+		ec.setClusterTolerance (0.02); // 2cm
+		ec.setMinClusterSize (100);
+		ec.setMaxClusterSize (25000);
+		ec.setSearchMethod (tree);
+		ec.setInputCloud (maincloud);
+		ec.extract (cluster_indices);
+
+		int j = 0;
+		
+		clustersCount = cluster_indices.size();
+		clusteredclouds = new pcl::PointCloud<pcl::PointXYZ>::Ptr[clustersCount];
+
+		for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
+		{
+			pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cluster (new pcl::PointCloud<pcl::PointXYZ>);
+			
+			for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++)
+				cloud_cluster->points.push_back (maincloud->points[*pit]); //*
+
+			cloud_cluster->width = cloud_cluster->points.size ();
+			cloud_cluster->height = 1;
+			cloud_cluster->is_dense = true;
+
+			// std::cout << "PointCloud representing the Cluster: " << cloud_cluster->points.size () << " data points." << std::endl;
+
+			clusteredclouds[j] = cloud_cluster;
+			
+			j++;
+		}
+
+		return true;
+	}
+
+	EXPORT_API int getClustersCount() {
+		return clustersCount;
+	}
+
+	EXPORT_API bool getCluster(int clusterIndex, float** resultVertsX, float** resultVertsY, float** resultVertsZ, int* resultVertLength) 
+	{
+		pcl::PointCloud<pcl::PointXYZ>::Ptr cluster = clusteredclouds[clusterIndex];
+
+		if (cluster->empty()) {
+			return false;
+		}
+
+		float* rVertsX = new float[cluster->points.size ()];
+		float* rVertsY = new float[cluster->points.size ()];
+		float* rVertsZ = new float[cluster->points.size ()];
+
+		for (size_t i = 0; i < cluster->points.size (); ++i)
+		{
+			rVertsX[i] = cluster->points[i].x;
+			rVertsY[i] = cluster->points[i].y;
+			rVertsZ[i] = cluster->points[i].z;
+		}
+
+		*resultVertsX = rVertsX;
+		*resultVertsY = rVertsY;
+		*resultVertsZ = rVertsZ;
+
+		int rVertLength = cluster->points.size ();
+		*resultVertLength = rVertLength;
+		
+		return true;
+	}
+
+	EXPORT_API bool getCloud(float** resultVertsX, float** resultVertsY, float** resultVertsZ, int* resultVertLength) 
+	{
+		if (maincloud->empty()) {
+			return false;
+		}
+
+		float* rVertsX = new float[maincloud->points.size ()];
+		float* rVertsY = new float[maincloud->points.size ()];
+		float* rVertsZ = new float[maincloud->points.size ()];
+
+		for (size_t i = 0; i < maincloud->points.size (); ++i)
+		{
+			rVertsX[i] = maincloud->points[i].x;
+			rVertsY[i] = maincloud->points[i].y;
+			rVertsZ[i] = maincloud->points[i].z;
+		}
+
+		*resultVertsX = rVertsX;
+		*resultVertsY = rVertsY;
+		*resultVertsZ = rVertsZ;
+
+		int rVertLength = maincloud->points.size ();
+		*resultVertLength = rVertLength;
+		
+		return true;
+	}
+
+	EXPORT_API bool readPointCloud(float** resultVertsX, float** resultVertsY, float** resultVertsZ, int* resultVertLength)
+	{
+		// Read in the cloud data
+		pcl::PCDReader reader;
+		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
+		reader.read ("table_scene_lms400.pcd", *cloud);
+
+		if (cloud->empty()) {
+			return false;
+		}
+
+		float* rVertsX = new float[cloud->points.size ()];
+		float* rVertsY = new float[cloud->points.size ()];
+		float* rVertsZ = new float[cloud->points.size ()];
+
+		for (size_t i = 0; i < cloud->points.size (); ++i)
+		{
+			rVertsX[i] = cloud->points[i].x;
+			rVertsY[i] = cloud->points[i].y;
+			rVertsZ[i] = cloud->points[i].z;
+		}
+
+		*resultVertsX = rVertsX;
+		*resultVertsY = rVertsY;
+		*resultVertsZ = rVertsZ;
+
+		int rVertLength = cloud->points.size ();
+		*resultVertLength = rVertLength;
+		
+		return true;
+	}
+
+	int main() {
+		readCloud();
+		removeBiggestPlane ();
+		getClusters ();
+		getClustersCount();
+
+		std::cout << "0 -> " << clusteredclouds[0]->size() << std::endl;
+		std::cout << "1 -> " << clusteredclouds[1]->size() << std::endl;
+		std::cout << "2 -> " << clusteredclouds[2]->size() << std::endl;
+		std::cout << "3 -> " << clusteredclouds[3]->size() << std::endl;
+		std::cout << "4 -> " << clusteredclouds[4]->size() << std::endl;
+
+		getchar();
+		return 0;
+	}
+
+} // end of export C block
