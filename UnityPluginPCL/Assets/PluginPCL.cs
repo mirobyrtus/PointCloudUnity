@@ -48,12 +48,18 @@ public class PluginPCL : MonoBehaviour {
 
 	[DllImport("cpp_plugin_pcl")]
 	private static extern bool readCloud();
+	
+	[DllImport("cpp_plugin_pcl")]
+	private static extern bool readKinectCloud();
 
 	[DllImport("cpp_plugin_pcl")]
 	private static extern bool removeBiggestPlane();
 	
 	[DllImport("cpp_plugin_pcl")]
 	private static extern bool getClusters();
+	
+	[DllImport("cpp_plugin_pcl")]
+	private static extern int getCloudSize();
 
 	[DllImport("cpp_plugin_pcl")]
 	private static extern int getClustersCount();
@@ -339,7 +345,8 @@ public class PluginPCL : MonoBehaviour {
 
 	void Start () 
 	{
-		Debug.Log ("readCloud() : " + readCloud ());
+		Debug.Log ("readCloud() : " + readKinectCloud ());
+		Debug.Log ("getCloudSize() : " + getCloudSize ());
 		Debug.Log ("removeBiggestPlane() : " + removeBiggestPlane ());
 		Debug.Log ("getClusters() : " + getClusters ());
 		Debug.Log ("getClustersCount() : " + getClustersCount ());

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <pcl/ModelCoefficients.h>
 #include <pcl/io/pcd_io.h>
+#include <pcl/io/openni_grabber.h>
 #include <pcl/point_types.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/filters/voxel_grid.h>
@@ -12,10 +13,51 @@
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/segmentation/extract_clusters.h>
+#include <pcl/visualization/cloud_viewer.h> // TODO uncomment
+#include <pcl/common/time.h>
 
 // Link following functions C-style (required for plugins)
 extern "C"
 {
+	
+	 class KinectCloudGrabber
+	 {
+		pcl::Grabber* interface;
+		bool viewerWasStopped;
+		
+	   public:
+		 pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloudFromKinect;
+
+		 KinectCloudGrabber () : viewerWasStopped (false) /*, cloudFromKinect (new pcl::PointCloud<pcl::PointXYZ>) */ { }
+
+		 void cloud_cb_ (const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &cloud)
+		 {
+			 if (!viewerWasStopped) {
+				cloudFromKinect = cloud;
+				viewerWasStopped = true;
+			 }
+		 }
+
+		 pcl::PointCloud<pcl::PointXYZ>::ConstPtr grabCloud ()
+		 {
+		   pcl::Grabber* interface = new pcl::OpenNIGrabber();
+
+		   boost::function<void (const pcl::PointCloud<pcl::PointXYZ>::ConstPtr&)> f = boost::bind (&KinectCloudGrabber::cloud_cb_, this, _1);
+
+		   interface->registerCallback (f);
+		   interface->start ();
+
+		   while (!viewerWasStopped)
+		   {
+			 boost::this_thread::sleep (boost::posix_time::seconds (1));
+		   }
+
+		   interface->stop ();
+
+		   return cloudFromKinect;
+		 }
+	 };
+
 	pcl::PointCloud<pcl::PointXYZ>::Ptr maincloud (new pcl::PointCloud<pcl::PointXYZ>);
 	
 	pcl::PointCloud<pcl::PointXYZ>::Ptr *clusteredclouds;
@@ -60,6 +102,24 @@ extern "C"
 		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
 		reader.read ("table_scene_lms400.pcd", *cloud);
 
+		if (cloud->empty()) {
+			return false;
+		}
+	
+		// Create the filtering object: downsample the dataset using a leaf size of 1cm
+		pcl::VoxelGrid<pcl::PointXYZ> vg;
+		vg.setInputCloud (cloud);
+		vg.setLeafSize (0.01f, 0.01f, 0.01f);
+		vg.filter (*maincloud);
+		
+		return true;
+	}
+
+	EXPORT_API bool readKinectCloud() {
+		KinectCloudGrabber kinectCloudGrabber;
+		pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud = kinectCloudGrabber.grabCloud ();
+		// std::cout << "Cloudsize :" << cloud->points.size () <<  std::endl;
+		   
 		if (cloud->empty()) {
 			return false;
 		}
@@ -163,6 +223,10 @@ extern "C"
 		return clustersCount;
 	}
 
+	EXPORT_API int getCloudSize() {
+		return maincloud->points.size();
+	}
+
 	EXPORT_API bool getCluster(int clusterIndex, float** resultVertsX, float** resultVertsY, float** resultVertsZ, int* resultVertLength) 
 	{
 		pcl::PointCloud<pcl::PointXYZ>::Ptr cluster = clusteredclouds[clusterIndex];
@@ -251,7 +315,43 @@ extern "C"
 		return true;
 	}
 
+	 /*
+	 EXPORT_API bool grabPointCloudFromKinect(float** resultVertsX, float** resultVertsY, float** resultVertsZ, int* resultVertLength)
+	{
+
+		   KinectCloudGrabber kinectCloudGrabber;
+		   pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud = kinectCloudGrabber.grabCloud ();
+		   std::cout << "Cloudsize :" << cloud->points.size () <<  std::endl;
+		   
+		if (cloud->empty()) {
+			return false;
+		}
+
+		float* rVertsX = new float[cloud->points.size ()];
+		float* rVertsY = new float[cloud->points.size ()];
+		float* rVertsZ = new float[cloud->points.size ()];
+
+		for (size_t i = 0; i < cloud->points.size (); ++i)
+		{
+			rVertsX[i] = cloud->points[i].x;
+			rVertsY[i] = cloud->points[i].y;
+			rVertsZ[i] = cloud->points[i].z;
+		}
+
+		*resultVertsX = rVertsX;
+		*resultVertsY = rVertsY;
+		*resultVertsZ = rVertsZ;
+
+		int rVertLength = cloud->points.size ();
+		*resultVertLength = rVertLength;
+		
+		return true;
+	}
+	 */
+
 	int main() {
+		
+		/*
 		readCloud();
 		removeBiggestPlane ();
 		getClusters ();
@@ -262,6 +362,7 @@ extern "C"
 		std::cout << "2 -> " << clusteredclouds[2]->size() << std::endl;
 		std::cout << "3 -> " << clusteredclouds[3]->size() << std::endl;
 		std::cout << "4 -> " << clusteredclouds[4]->size() << std::endl;
+		*/
 
 		getchar();
 		return 0;
