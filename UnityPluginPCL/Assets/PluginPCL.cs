@@ -68,6 +68,9 @@ public class PluginPCL : MonoBehaviour {
 	private static extern bool getCluster(int clusterIndex, ref IntPtr ptrResultVertsX, ref IntPtr ptrResultVertsY, ref IntPtr ptrResultVertsZ, ref int resultVertLength);
 
 	[DllImport("cpp_plugin_pcl")]
+	private static extern bool getClusterIndices(int clusterIndex, ref IntPtr indices, ref int indicesLength);
+
+	[DllImport("cpp_plugin_pcl")]
 	private static extern bool getCloud(ref IntPtr ptrResultVertsX, ref IntPtr ptrResultVertsY, ref IntPtr ptrResultVertsZ, ref int resultVertLength);
 
 	// Struct test begin
@@ -343,9 +346,61 @@ public class PluginPCL : MonoBehaviour {
 		return;
 	}
 
+	void debugIndices(int clusterIndex) {
+		IntPtr ptrIndices = IntPtr.Zero;
+		int resultIndicesLength = 0;
+		
+		bool success = getClusterIndices (clusterIndex, ref ptrIndices, ref resultIndicesLength);
+		if (success) {
+			// Debug.Log ("ResultVertLenght = " + resultVertLength);
+			
+			// Load the results into a managed array.
+			float[] resultIndices = new float[resultIndicesLength];
+
+			Marshal.Copy (
+				ptrIndices, 
+				resultIndices, 
+				0, 
+				resultIndicesLength
+			);
+
+			String indicesStr = "Indices Debug : ";
+
+			for (int i = 0; i < resultIndicesLength; i++) {
+				indicesStr += " : " + resultIndices[i];
+			}
+
+			Debug.Log(indicesStr + ".");
+			
+			resultIndices = null;
+
+			/*
+			* WARNING!!!! IMPORTANT!!!
+			* In this example the plugin created an array allocated
+			* in unmanged memory.  The plugin will need to provide a
+			* means to free the memory.
+			*/
+			
+		} else { 
+			Debug.Log("Ended not sucessfully."); 
+		} 
+		
+		ptrIndices = IntPtr.Zero;
+		
+		return;
+	}
+
+
+	public bool useKinect;
+	public bool debug_indices;
 	void Start () 
 	{
-		Debug.Log ("readCloud() : " + readKinectCloud ());
+		if (useKinect) {
+			Debug.Log ("readKinectCloud() : " + readKinectCloud ());
+		} else {
+			Debug.Log ("readCloud() : " + readCloud ());
+		}
+
 		Debug.Log ("getCloudSize() : " + getCloudSize ());
 		Debug.Log ("removeBiggestPlane() : " + removeBiggestPlane ());
 		Debug.Log ("getClusters() : " + getClusters ());
@@ -353,6 +408,10 @@ public class PluginPCL : MonoBehaviour {
 
 		for (int i = 0; i < getClustersCount(); i++) {
 			drawCluster (i);
+
+			if (debug_indices) {
+				debugIndices(i);
+			}
 		}
 	}
 

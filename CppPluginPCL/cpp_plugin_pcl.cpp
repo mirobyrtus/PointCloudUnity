@@ -61,6 +61,8 @@ extern "C"
 	pcl::PointCloud<pcl::PointXYZ>::Ptr maincloud (new pcl::PointCloud<pcl::PointXYZ>);
 	
 	pcl::PointCloud<pcl::PointXYZ>::Ptr *clusteredclouds;
+	std::vector<std::vector<int>> clusteredcloudsindices;
+
 	int clustersCount = 0;
 
 	struct mycloud 
@@ -197,13 +199,17 @@ extern "C"
 		
 		clustersCount = cluster_indices.size();
 		clusteredclouds = new pcl::PointCloud<pcl::PointXYZ>::Ptr[clustersCount];
+		clusteredcloudsindices.resize(clustersCount);
 
 		for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
 		{
 			pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cluster (new pcl::PointCloud<pcl::PointXYZ>);
-			
-			for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++)
+
+
+			for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++) {
 				cloud_cluster->points.push_back (maincloud->points[*pit]); //*
+				clusteredcloudsindices[j].push_back(*pit);
+			}
 
 			cloud_cluster->width = cloud_cluster->points.size ();
 			cloud_cluster->height = 1;
@@ -252,6 +258,29 @@ extern "C"
 
 		int rVertLength = cluster->points.size ();
 		*resultVertLength = rVertLength;
+		
+		return true;
+	}
+
+	EXPORT_API bool getClusterIndices(int clusterIndex, float** indices, int* indicesLength) 
+	{
+		std::vector<int> clusteredcloudindices = clusteredcloudsindices[clusterIndex];
+
+		if (clusteredcloudindices.empty()) {
+			return false;
+		}
+
+		float* inds = new float[clusteredcloudindices.size ()];
+
+		for (size_t i = 0; i < clusteredcloudindices.size (); ++i)
+		{
+			inds[i] = clusteredcloudindices[i];
+		}
+
+		*indices = inds;
+
+		int indLength = clusteredcloudindices.size ();
+		*indicesLength = indLength;
 		
 		return true;
 	}
@@ -351,19 +380,27 @@ extern "C"
 
 	int main() {
 		
-		/*
+
 		readCloud();
 		removeBiggestPlane ();
 		getClusters ();
 		getClustersCount();
+		
+		for (size_t i = 0; i < clusteredcloudsindices[0].size (); ++i)
+		{
+			std::cout << " : " << clusteredcloudsindices[0][i];
+		}
+
+		std::cout << std::endl;
 
 		std::cout << "0 -> " << clusteredclouds[0]->size() << std::endl;
 		std::cout << "1 -> " << clusteredclouds[1]->size() << std::endl;
 		std::cout << "2 -> " << clusteredclouds[2]->size() << std::endl;
 		std::cout << "3 -> " << clusteredclouds[3]->size() << std::endl;
 		std::cout << "4 -> " << clusteredclouds[4]->size() << std::endl;
-		*/
 
+
+		
 		getchar();
 		return 0;
 	}
