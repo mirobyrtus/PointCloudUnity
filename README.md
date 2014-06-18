@@ -28,15 +28,15 @@
  
  ------------------------------------------------------------------------------------------------
  
- Requirements
-   PCL 1.7 installed on your PC 
+ Requirements:
+   * PCL 1.7 installed on your PC 
  
- For development
-   Unity3D - free version
-   MS Visual Studio - version compatible with PCL installed
+ For development:
+   * Unity3D - free version
+   * MS Visual Studio - version compatible with PCL installed
  
- Optional
-   Kinect
+ Optional:
+   * Kinect
    
  ------------------------------------------------------------------------------------------------
  
