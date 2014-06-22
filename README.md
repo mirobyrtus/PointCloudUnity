@@ -1,6 +1,5 @@
  
  ************************************************************************************************
- ************************************************************************************************
  
  From Design to Software 2
  
@@ -45,6 +44,8 @@
  1. Create a DLL from the .cpp file 
  2. Make sure that the DLL is located in the root folder of your Unity Project (Copy it in Filesystem, not trough Unity)
  3. Copy the pointcloud file into the project directory, or connect Kinect to your PC
+ 3.1. If you want to use Kinect, you have to check the "Use Kinect" checkbox in the Plugin Script settings
+      If it's not checked, it will load a Pointcloud from file "table_scene_lms400.pcd" (It's available in the UnityPCL directory)
  4. Now you can use the plugin (Check the example script how to use it's functionality)
  
  ------------------------------------------------------------------------------------------------
