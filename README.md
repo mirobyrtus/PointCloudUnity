@@ -30,12 +30,19 @@
  Requirements:
    * PCL 1.7 installed on your PC 
  
+     ** Drivers and libraries needed to install PCL 1.7
+     + TODO 
+     + Copy the link with dependencies here? 
+
  For development:
    * Unity3D - free version
    * MS Visual Studio - version compatible with PCL installed
  
  Optional:
    * Kinect
+   
+   ** If you want to use Kinect in this project, you also will need to install
+   + TODO official kinect Drivers so that you computer can recognize Kinect
    
  ------------------------------------------------------------------------------------------------
  
