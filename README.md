@@ -75,5 +75,19 @@ Requirements for running the project:
  4. Now you can use the plugin (Check the example script how to use it's functionality)
  
  ------------------------------------------------------------------------------------------------
+
+  Time measuring
+  * readCloud() :          True in 2.539685 s.
+  * getCloudSize() :      41049 in 0.006095648 s.
+  * removeBiggestPlane() : True in 1.106412 s.
+  * getClusters() :        True in 0.6244252 s.
+  * getClustersCount() :      5 in 0.001582623 s.
+  * Clusters               drawn in 0.8556294 s. (Drawn by instantiating prefabs - take 1)
+  * Clusters               drawn in 0.5284262 s. (Drawn by instantiating prefabs - take 2)
+  * Clusters               drawn in 0.7251348 s. (Drawn by creating cubes - take 1)
+  * Clusters               drawn in 0.6915045 s. (Drawn by creating cubes - take 2)
+
+
+ ------------------------------------------------------------------------------------------------
  
  
