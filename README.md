@@ -76,16 +76,26 @@ Requirements for running the project:
  
  ------------------------------------------------------------------------------------------------
 
-  Time measuring
+  Time measuring (Reading Pointcloud from File)
+  
   * readCloud() :          True in 2.539685 s.
   * getCloudSize() :      41049 in 0.006095648 s.
   * removeBiggestPlane() : True in 1.106412 s.
   * getClusters() :        True in 0.6244252 s.
   * getClustersCount() :      5 in 0.001582623 s.
-  * Clusters               drawn in 0.8556294 s. (Drawn by instantiating prefabs - take 1)
-  * Clusters               drawn in 0.5284262 s. (Drawn by instantiating prefabs - take 2)
-  * Clusters               drawn in 0.7251348 s. (Drawn by creating cubes - take 1)
-  * Clusters               drawn in 0.6915045 s. (Drawn by creating cubes - take 2)
+  * Clusters              drawn in 0.8556294 s. (Drawn by instantiating prefabs - take 1)
+  * Clusters              drawn in 0.5284262 s. (Drawn by instantiating prefabs - take 2)
+  * Clusters              drawn in 0.7251348 s. (Drawn by creating cubes - take 1)
+  * Clusters              drawn in 0.6915045 s. (Drawn by creating cubes - take 2)
+
+ Time measuring (Reading Pointcloud from Kinect)
+ 
+  * readKinectCloud() :    True in 6.001034 s.
+  * getCloudSize() :     102713 in 0.004247189 s.
+  * removeBiggestPlane() : True in 39.78041 s.
+  * getClusters() :        True in 1.613297 s.
+  * getClustersCount() :     37 in 0.00138855 s.
+  * Clusters              drawn in 0.6203613 s.
 
 
  ------------------------------------------------------------------------------------------------
