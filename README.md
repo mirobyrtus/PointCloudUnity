@@ -87,7 +87,8 @@ Requirements for running the project:
   * Clusters              drawn in 0.5284262 s. (Drawn by instantiating prefabs - take 2)
   * Clusters              drawn in 0.7251348 s. (Drawn by creating cubes - take 1)
   * Clusters              drawn in 0.6915045 s. (Drawn by creating cubes - take 2)
-
+ 
+ 
  Time measuring (Reading Pointcloud from Kinect)
  
   * readKinectCloud() :    True in 6.001034 s.
