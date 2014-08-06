@@ -27,22 +27,41 @@
  
  ------------------------------------------------------------------------------------------------
  
- Requirements:
+ Requirements for compiling the project from source code: 
+
    * PCL 1.7 installed on your PC 
- 
-     ** Drivers and libraries needed to install PCL 1.7
-     + TODO 
-     + Copy the link with dependencies here? 
+   ** To install PCL, follow the steps on the official website, according to your OS 
+      + http://pointclouds.org/downloads/linux.html
+      + http://pointclouds.org/downloads/windows.html
+      + http://pointclouds.org/downloads/macosx.html
 
  For development:
-   * Unity3D - free version
+   * Unity3D (free version is enough)
    * MS Visual Studio - version compatible with PCL installed
  
  Optional:
    * Kinect
-   
    ** If you want to use Kinect in this project, you also will need to install
-   + TODO official kinect Drivers so that you computer can recognize Kinect
+      + drivers for Kinect for your OS 
+      + OpenNI (In the list of optional dependencies for PCL)
+ 
+Requirements for running the project: 
+  
+   * Unity3D (free version is enough)
+   * Unity Project 
+   * cpp_plugin_pcl.dll coppied into the root directory of the project 
+   * dependent ddls for cpp_plugin_pcl.dll (Can vary depending on PCL version installed and on your OS)
+     For Windows 8 32bit with PCL 1.7. 32bit installed, it is: 
+     + kernel32.dll
+     + advapi32.dll
+     + pcl_common_debug.dll
+     + pcl_io_debug.dll
+     + pcl_search_debug.dll
+     + pcl_filters_debug.dll
+     + pcl_segmentation_debug.dll
+     + msvcp100d.dll
+     + msvcr100d.dll
+   * If you want to use Kinect in this project, you also will need drivers for Kinect, compatible with your OS 
    
  ------------------------------------------------------------------------------------------------
  
