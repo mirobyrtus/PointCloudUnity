@@ -41,7 +41,7 @@
  
  Optional:
    * Kinect
-   ** If you want to use Kinect in this project, you also will need to install
+   * If you want to use Kinect in this project, you also will need to install
       + drivers for Kinect for your OS 
       + OpenNI (In the list of optional dependencies for PCL)
  
@@ -51,7 +51,7 @@ Requirements for running the project:
    * Unity Project 
    * cpp_plugin_pcl.dll coppied into the root directory of the project 
    * dependent ddls for cpp_plugin_pcl.dll (Can vary depending on PCL version installed and on your OS)
-     For Windows 8 32bit with PCL 1.7. 32bit installed, it is: 
+     + For Windows 8 32bit with PCL 1.7. 32bit installed, it is: 
      + kernel32.dll
      + advapi32.dll
      + pcl_common_debug.dll
