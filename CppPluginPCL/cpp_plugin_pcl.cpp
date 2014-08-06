@@ -135,7 +135,7 @@ extern "C"
 		return true;
 	}
 
-	EXPORT_API bool removeBiggestPlane() {
+	EXPORT_API bool removeBiggestPlane(int maxIterations, double distanceThreshold) {
 		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_f (new pcl::PointCloud<pcl::PointXYZ>);
 
 		// Create the segmentation object for the planar model and set all the parameters
@@ -147,8 +147,8 @@ extern "C"
 		seg.setOptimizeCoefficients (true);
 		seg.setModelType (pcl::SACMODEL_PLANE);
 		seg.setMethodType (pcl::SAC_RANSAC);
-		seg.setMaxIterations (100);
-		seg.setDistanceThreshold (0.02);
+		seg.setMaxIterations (maxIterations); // 100);
+		seg.setDistanceThreshold (distanceThreshold); // 0.02);
 
 		int i=0, nr_points = (int) maincloud->points.size ();
 		while (maincloud->points.size () > 0.3 * nr_points)
@@ -181,16 +181,16 @@ extern "C"
 		return true;
 	}
 
-	EXPORT_API bool getClusters() {
+	EXPORT_API bool getClusters(double clusterTolerance, int minClusterSize, int maxClusterSize) {
 		// Creating the KdTree object for the search method of the extraction
 		pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
 		tree->setInputCloud (maincloud);
 
 		std::vector<pcl::PointIndices> cluster_indices;
 		pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-		ec.setClusterTolerance (0.02); // 2cm
-		ec.setMinClusterSize (100);
-		ec.setMaxClusterSize (25000);
+		ec.setClusterTolerance (clusterTolerance); // 0.02); // 2cm
+		ec.setMinClusterSize (minClusterSize); // 100);
+		ec.setMaxClusterSize (maxClusterSize); // 25000);
 		ec.setSearchMethod (tree);
 		ec.setInputCloud (maincloud);
 		ec.extract (cluster_indices);
@@ -204,7 +204,6 @@ extern "C"
 		for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
 		{
 			pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cluster (new pcl::PointCloud<pcl::PointXYZ>);
-
 
 			for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++) {
 				cloud_cluster->points.push_back (maincloud->points[*pit]); //*
@@ -380,10 +379,9 @@ extern "C"
 
 	int main() {
 		
-
 		readCloud();
-		removeBiggestPlane ();
-		getClusters ();
+		removeBiggestPlane (100, 0.02);
+		getClusters (0.02, 100, 25000);
 		getClustersCount();
 		
 		for (size_t i = 0; i < clusteredcloudsindices[0].size (); ++i)
@@ -398,8 +396,6 @@ extern "C"
 		std::cout << "2 -> " << clusteredclouds[2]->size() << std::endl;
 		std::cout << "3 -> " << clusteredclouds[3]->size() << std::endl;
 		std::cout << "4 -> " << clusteredclouds[4]->size() << std::endl;
-
-
 		
 		getchar();
 		return 0;

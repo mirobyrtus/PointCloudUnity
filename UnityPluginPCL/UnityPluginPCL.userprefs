@@ -1,8 +1,9 @@
 ﻿<Properties>
-  <MonoDevelop.Ide.Workspace />
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
   <MonoDevelop.Ide.Workbench ActiveDocument="Assets\PluginPCL.cs">
     <Files>
-      <File FileName="Assets\PluginPCL.cs" Line="110" Column="27" />
+      <File FileName="Assets\PluginPCL.cs" Line="274" Column="35" />
+      <File FileName="Assets\PluginPCL.cs" Line="555" Column="1" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>

@@ -53,10 +53,10 @@ public class PluginPCL : MonoBehaviour {
 	private static extern bool readKinectCloud();
 
 	[DllImport("cpp_plugin_pcl")]
-	private static extern bool removeBiggestPlane();
+	private static extern bool removeBiggestPlane(int maxIterations, double distanceThreshold);
 	
 	[DllImport("cpp_plugin_pcl")]
-	private static extern bool getClusters();
+	private static extern bool getClusters(double clusterTolerance, int minClusterSize, int maxClusterSize);
 	
 	[DllImport("cpp_plugin_pcl")]
 	private static extern int getCloudSize();
@@ -266,16 +266,26 @@ public class PluginPCL : MonoBehaviour {
 		createCube (x, y, z, Color.black, 0);
 	}
 
-	void createCube(float x, float y, float z, Color color, int tag) {
-		GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-		cube.transform.position = new Vector3(x, y, z);
+	public Transform point;
+	public bool usePrefabs = true;
 
-		cube.name = "point_in_cloud_" + tag;
-		// cube.AddComponent ("MyClickHandler");
-		cube.renderer.material.color = color;
-		
-		float scale = 0.005F;
-		cube.transform.localScale = new Vector3 (scale, scale, scale);
+	void createCube(float x, float y, float z, Color color, int tag) {
+		if (usePrefabs) {
+			Transform t = ((Transform)Instantiate(point, new Vector3(x, y, z), Quaternion.identity));
+			t.renderer.material.color = color;
+			t.name = "point_in_cloud_" + tag;
+
+		} else {
+			GameObject cube = GameObject.CreatePrimitive (PrimitiveType.Cube);
+			cube.transform.position = new Vector3 (x, y, z);
+
+			cube.name = "point_in_cloud_" + tag;
+			// cube.AddComponent ("MyClickHandler");
+			cube.renderer.material.color = color;
+
+			float scale = 0.005F;
+			cube.transform.localScale = new Vector3 (scale, scale, scale);
+		}
 	}
 
 	void drawCluster(int clusterIndex) {
@@ -319,7 +329,6 @@ public class PluginPCL : MonoBehaviour {
 			int tag = clusterIndex;
 
 			// TODO create unique tag and add it into tags
-
 			for (int i = 0; i < resultVertLength; i++) {
 				createCube(resultVerticesX[i], resultVerticesY[i], resultVerticesZ[i], color, tag);
 			}
@@ -370,7 +379,7 @@ public class PluginPCL : MonoBehaviour {
 				indicesStr += " : " + resultIndices[i];
 			}
 
-			Debug.Log(indicesStr + ".");
+			// Debug.Log(indicesStr + ".");
 			
 			resultIndices = null;
 
@@ -390,36 +399,105 @@ public class PluginPCL : MonoBehaviour {
 		return;
 	}
 
+	void refreshKinect() {
+		Debug.Log ("Refreshing kinect ..");
 
-	public bool useKinect;
-	public bool debug_indices;
-	void Start () 
-	{
-		if (useKinect) {
-			Debug.Log ("readKinectCloud() : " + readKinectCloud ());
-		} else {
-			Debug.Log ("readCloud() : " + readCloud ());
-		}
+		// Clean pointcloud
+		readKinectCloud ();
 
-		Debug.Log ("getCloudSize() : " + getCloudSize ());
-		Debug.Log ("removeBiggestPlane() : " + removeBiggestPlane ());
-		Debug.Log ("getClusters() : " + getClusters ());
-		Debug.Log ("getClustersCount() : " + getClustersCount ());
+		/*
+		// Clean scene (delete old cubes)
+		// Move whole cloud to left
+		GameObject[] myPoints  = (GameObject[])FindObjectsOfType (typeof(GameObject));
+		for (int i=0; i < myPoints.Length; i++) {
 
-		for (int i = 0; i < getClustersCount(); i++) {
-			drawCluster (i);
-
-			if (debug_indices) {
-				debugIndices(i);
+			if (myPoints[i].name.StartsWith("point_in_cloud")) {
+				Destroy (myPoints[i]);
 			}
 		}
+		
+		getCloudSize ();
+		removeBiggestPlane ();
+		getClusters ();
+		getClustersCount ();
+		
+		for (int i = 0; i < getClustersCount(); i++) {
+			drawCluster (i);
+		}
+		*/
+	}
+	
+	float totaltime; 
+	string printTimeDelta() {
+		float ms = Time.realtimeSinceStartup - totaltime;
+		totaltime = Time.realtimeSinceStartup;
+		return " in " + ms + " s.";
+	}
+
+	public bool useKinect;
+	public bool kinectRealtime;
+	public bool debug_indices;
+
+	// removeBiggestPlane parameters
+	public int maxIterations = 100;
+	public double distanceThreshold = 0.02;
+
+	// getClusters parameters
+	public double clusterTolerance = 0.02; 
+	public int minClusterSize = 100; 
+	public int maxClusterSize = 25000;
+
+	void Start () 
+	{
+		totaltime = Time.realtimeSinceStartup; 
+
+		if (useKinect) {
+			Debug.Log ("readKinectCloud() : " + readKinectCloud () + printTimeDelta());
+		} else {
+			Debug.Log ("readCloud() : " + readCloud () + printTimeDelta());
+		}
+
+		if (true) {
+			Debug.Log ("getCloudSize() : " + getCloudSize () + printTimeDelta());
+			Debug.Log ("removeBiggestPlane() : " + removeBiggestPlane (maxIterations, distanceThreshold) + printTimeDelta());
+			Debug.Log ("getClusters() : " + getClusters (clusterTolerance, minClusterSize, maxClusterSize) + printTimeDelta());
+			Debug.Log ("getClustersCount() : " + getClustersCount () + printTimeDelta());
+
+			for (int i = 0; i < getClustersCount(); i++) {
+					drawCluster (i);
+	
+					if (debug_indices) {
+							debugIndices (i);
+					}
+			}
+
+			Debug.Log ("Clusters drawn" + printTimeDelta());
+
+		} else {
+				// Just for testing... dont use that
+				drawMyCloud();
+
+		}
+
+		totaltime = Time.realtimeSinceStartup;
 	}
 
 	int selectedTag = -1;
 	float keyboardMoveSensitivity = 100f;
 
+
 	void Update ()
 	{
+		// Debug.Log ("Time = " + (Time.realtimeSinceStartup - totaltime));
+		if (useKinect && kinectRealtime) {
+				if ((Time.realtimeSinceStartup - totaltime) > 5f) {
+						Debug.Log ("refresh now?");
+						totaltime = Time.realtimeSinceStartup;
+
+						refreshKinect ();
+				}
+		}
+
 		if (Input.GetMouseButtonUp (0)) {
 
 			GameObject clickedGmObj = GetClickedGameObject();
